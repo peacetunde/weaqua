@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WEAQUA — Weather & Air Quality</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v2" />
+            <path d="m4.93 4.93 1.41 1.41" />
+            <path d="M20 12h2" />
+            <path d="m19.07 4.93-1.41 1.41" />
+            <path d="M15.947 12.65a4 4 0 0 0-5.925-4.128" />
+            <path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">WEAQUA</h1>
+          <p class="brand-subtitle">Weather & Air Quality</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <span id="offline-badge" class="badge-offline hidden" aria-live="polite">
+          <span class="pulse-dot"></span> Offline
+        </span>
+        <button id="btn-my-location" class="icon-btn" title="Use current location" aria-label="Use current location">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 2v3m0 14v3M2 12h3m14 0h3" />
+            <circle cx="12" cy="12" r="7" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Search Section -->
+    <section class="search-section" aria-label="Search city">
+      <form id="search-form" class="search-form" role="search" onsubmit="return false;">
+        <div class="search-input-wrapper">
+          <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input 
+            type="search" 
+            id="search-input" 
+            class="search-input" 
+            placeholder="Search city (e.g., Paris, Tokyo, New York)..." 
+            autocomplete="off" 
+            spellcheck="false"
+            aria-label="City name"
+          >
+          <button type="button" id="search-clear-btn" class="search-clear-btn hidden" aria-label="Clear search input">✕</button>
+        </div>
+        <button type="submit" id="search-submit-btn" class="btn btn-primary search-btn">
+          Search
+        </button>
+      </form>
+      <!-- Suggestions Dropdown -->
+      <ul id="search-suggestions" class="search-suggestions hidden" role="listbox" aria-label="City suggestions"></ul>
+    </section>
+
+    <!-- System & Status Notices -->
+    <div id="notice-container" class="notice-container">
+      <!-- Location Blocked Notice -->
+      <div id="location-notice" class="notice notice-warning hidden" role="alert">
+        <div class="notice-content">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span id="location-notice-text">Location access was blocked. Please search for a city above.</span>
+        </div>
+        <button type="button" class="notice-close-btn" id="close-location-notice" aria-label="Dismiss notice">✕</button>
+      </div>
+
+      <!-- Cached / Offline Notice -->
+      <div id="cached-notice" class="notice notice-info hidden" role="status">
+        <div class="notice-content">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <span id="cached-notice-text">Showing saved weather results (updated recently).</span>
+        </div>
+      </div>
+
+      <!-- Error Notice -->
+      <div id="error-notice" class="notice notice-danger hidden" role="alert">
+        <div class="notice-content">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+          </svg>
+          <span id="error-notice-text">Something went wrong. Please try again.</span>
+        </div>
+        <button type="button" class="notice-close-btn" id="close-error-notice" aria-label="Dismiss notice">✕</button>
+      </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loading-spinner" class="loading-container hidden" role="status" aria-live="polite">
+      <div class="spinner"></div>
+      <p id="loading-text">Loading weather data...</p>
+    </div>
+
+    <!-- Main Weather Display -->
+    <main id="weather-content" class="weather-content hidden">
+      <!-- Current Weather Card -->
+      <section class="card current-card" aria-label="Current weather">
+        <div class="current-header">
+          <div class="location-details">
+            <h2 id="current-city-name" class="current-city">Loading...</h2>
+            <p id="current-country-name" class="current-country">--</p>
+          </div>
+          <button id="btn-save-current" class="btn-save" aria-label="Save this city">
+            <svg class="save-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span id="save-btn-label">Save City</span>
+          </button>
+        </div>
+
+        <div class="current-main">
+          <div class="current-temp-block">
+            <span id="current-temp" class="current-temp">--°</span>
+            <span class="temp-unit">C</span>
+          </div>
+          <div class="current-condition-block">
+            <div id="current-weather-icon" class="weather-icon-lg" aria-hidden="true">☀️</div>
+            <p id="current-condition" class="current-condition-text">Clear sky</p>
+            <p id="current-feels-like" class="current-feels-like">Feels like --°C</p>
+          </div>
+        </div>
+
+        <!-- Metrics Grid (Humidity, Wind Speed, Air Quality summary) -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-icon-wrap water-wrap">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+              </svg>
+            </div>
+            <div class="metric-info">
+              <span class="metric-label">Humidity</span>
+              <span id="current-humidity" class="metric-value">--%</span>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon-wrap wind-wrap">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"></path>
+              </svg>
+            </div>
+            <div class="metric-info">
+              <span class="metric-label">Wind Speed</span>
+              <span id="current-wind" class="metric-value">-- km/h</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Air Quality Level Card -->
+        <div class="aqi-card" id="aqi-card">
+          <div class="aqi-header">
+            <div class="aqi-title-wrap">
+              <span class="aqi-title">Air Quality</span>
+              <span id="aqi-badge" class="aqi-badge aqi-good">Good</span>
+            </div>
+            <span id="aqi-value-text" class="aqi-index">AQI --</span>
+          </div>
+          <p id="aqi-description" class="aqi-description">Air quality is ideal for outdoor activities.</p>
+        </div>
+
+        <!-- Weather Tip Card -->
+        <div class="tip-card" id="weather-tip-card">
+          <div class="tip-icon-wrap" id="tip-icon-wrap">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v1m0 18v1m9-10h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z"></path>
+            </svg>
+          </div>
+          <div class="tip-text-wrap">
+            <span class="tip-heading">Weather Tip</span>
+            <p id="weather-tip-text" class="tip-text">Checking conditions...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5-Day Forecast Card -->
+      <section class="card forecast-card" aria-label="5-day forecast">
+        <h3 class="section-title">5-Day Forecast</h3>
+        <div id="forecast-list" class="forecast-list">
+          <!-- Dynamically populated 5-day forecast items -->
+        </div>
+      </section>
+    </main>
+
+    <!-- Saved Cities Section -->
+    <section class="card saved-cities-section" aria-label="Saved cities">
+      <div class="saved-cities-header">
+        <h3 class="section-title">
+          Saved Cities 
+          <span id="saved-cities-count" class="counter-badge">0</span>
+        </h3>
+      </div>
+
+      <!-- Empty state container -->
+      <div id="saved-empty-state" class="empty-state">
+        <div class="empty-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </div>
+        <p class="empty-title">No saved cities yet</p>
+        <p class="empty-subtitle">Search for a city above and tap "Save City" to keep your favorites here for quick access.</p>
+      </div>
+
+      <!-- Saved cities list -->
+      <div id="saved-cities-list" class="saved-cities-list hidden">
+        <!-- Dynamically populated saved cities -->
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>Data provided by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a></p>
+    </footer>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="delete-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-box">
+      <div class="modal-icon-wrap" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#ef4444" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </svg>
+      </div>
+      <h3 id="modal-title" class="modal-title">Delete Saved City</h3>
+      <p id="modal-message" class="modal-message">Are you sure you want to remove this city from your saved list?</p>
+      <div class="modal-actions">
+        <button type="button" id="btn-cancel-delete" class="btn btn-secondary">Cancel</button>
+        <button type="button" id="btn-confirm-delete" class="btn btn-danger">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
